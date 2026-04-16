@@ -155,6 +155,7 @@ void Asteroids::OnKeyPressed(uchar key, int x, int y)
 					return a.score > b.score;
 				});
 
+			SaveHighScores();
 			ShowLeaderboard();
 			return;
 		}
@@ -174,17 +175,20 @@ void Asteroids::OnKeyPressed(uchar key, int x, int y)
 		return;
 	}
 
-	if (showingLeaderboard && key == 13)
+	if (showingLeaderboard && key == ' ')
 	{
 		showingLeaderboard = false;
 		mGameDisplay->GetContainer()->RemoveComponent(mLeaderboardLabel);
+		for (auto& line : mLeaderboardLines)
+			mGameDisplay->GetContainer()->RemoveComponent(line);
+		mLeaderboardLines.clear();
 
 		ResetGame();
 
 		return;
 	}
 
-	if (!gameStarted && key == 13)
+	if (!gameStarted && !showingLeaderboard && !enteringName && key == 13)
 	{
 		gameStarted = true;
 
@@ -435,29 +439,48 @@ void Asteroids::ShowLeaderboard()
 	mGameOverLabel->SetVisible(false);
 	mGameDisplay->GetContainer()->RemoveComponent(mEnterNameLabel);
 
-	// Build leaderboard text
-	std::string text = "== HIGH SCORES ==\n\n";
-	text += "RANK  NAME      SCORE\n\n";
+	// Title
+	mLeaderboardLabel = make_shared<GUILabel>("== HIGH SCORES ==");
+	mLeaderboardLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
+	mLeaderboardLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
+	mGameDisplay->GetContainer()->AddComponent(
+		static_pointer_cast<GUIComponent>(mLeaderboardLabel), GLVector2f(0.5f, 0.8f));
 
+	// Header
+	shared_ptr<GUILabel> headerLabel = make_shared<GUILabel>("RANK   NAME       SCORE");
+	headerLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
+	headerLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
+	mGameDisplay->GetContainer()->AddComponent(
+		static_pointer_cast<GUIComponent>(headerLabel), GLVector2f(0.5f, 0.72f));
+	mLeaderboardLines.push_back(headerLabel);
+
+	// Score rows - each on its own label
+	float yPos = 0.64f;
 	for (size_t i = 0; i < highScores.size() && i < 5; i++)
 	{
 		std::ostringstream row;
-		row << (i + 1) << "     ";
-		// Pad name to 8 chars for alignment
+		row << (i + 1) << "      ";
 		std::string paddedName = highScores[i].name;
 		while (paddedName.length() < 8) paddedName += " ";
-		row << paddedName << "  " << highScores[i].score << "\n";
-		text += row.str();
+		row << paddedName << "   " << highScores[i].score;
+
+		shared_ptr<GUILabel> rowLabel = make_shared<GUILabel>(row.str());
+		rowLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
+		rowLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
+		mGameDisplay->GetContainer()->AddComponent(
+			static_pointer_cast<GUIComponent>(rowLabel), GLVector2f(0.5f, yPos));
+		mLeaderboardLines.push_back(rowLabel);
+
+		yPos -= 0.08f;
 	}
 
-	text += "\nPress Enter to Play Again";
-
-	mLeaderboardLabel = make_shared<GUILabel>(text);
-	mLeaderboardLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
-	mLeaderboardLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
-
+	// Prompt
+	shared_ptr<GUILabel> promptLabel = make_shared<GUILabel>("Press Space to Play Again");
+	promptLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
+	promptLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
 	mGameDisplay->GetContainer()->AddComponent(
-		static_pointer_cast<GUIComponent>(mLeaderboardLabel), GLVector2f(0.5f, 0.5f));
+		static_pointer_cast<GUIComponent>(promptLabel), GLVector2f(0.5f, yPos - 0.05f));
+	mLeaderboardLines.push_back(promptLabel);
 }
 
 shared_ptr<GameObject> Asteroids::CreateExplosion()

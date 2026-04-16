@@ -82,6 +82,7 @@ private:
 	Player mPlayer;
 
 	std::vector<HighScore> highScores;
+	std::vector<shared_ptr<GUILabel>> mLeaderboardLines;
 
 	int currentScore = 0;
 
