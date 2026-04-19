@@ -185,6 +185,13 @@ void Asteroids::OnKeyPressed(uchar key, int x, int y)
 
 		ResetGame();
 
+		gameStarted = true;
+		mStartLabel->SetVisible(false);
+		mGameWorld->AddObject(CreateSpaceship());
+		CreateAsteroids(10);
+		mScoreLabel->SetVisible(true);
+		mLivesLabel->SetVisible(true);
+
 		return;
 	}
 
