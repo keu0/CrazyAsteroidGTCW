@@ -5,12 +5,12 @@
 #include "GameSession.h"
 #include "IKeyboardListener.h"
 #include "IGameWorldListener.h"
-#include "IScoreListener.h" 
+#include "IScoreListener.h"
 #include "ScoreKeeper.h"
 #include "Player.h"
 #include "IPlayerListener.h"
 #include <vector>
-#include "HighScore.h"
+#include <algorithm>
 
 class GameObject;
 class Spaceship;
@@ -25,70 +25,117 @@ public:
 	virtual void Start(void);
 	virtual void Stop(void);
 
-	// Declaration of IKeyboardListener interface ////////////////////////////////
-
 	void OnKeyPressed(uchar key, int x, int y);
 	void OnKeyReleased(uchar key, int x, int y);
 	void OnSpecialKeyPressed(int key, int x, int y);
 	void OnSpecialKeyReleased(int key, int x, int y);
 
-	// Declaration of IScoreListener interface //////////////////////////////////
-
 	void OnScoreChanged(int score);
-
-	// Declaration of the IPlayerLister interface //////////////////////////////
-
 	void OnPlayerKilled(int lives_left);
-
-	// Declaration of IGameWorldListener interface //////////////////////////////
 
 	void OnWorldUpdated(GameWorld* world) {}
 	void OnObjectAdded(GameWorld* world, shared_ptr<GameObject> object) {}
 	void OnObjectRemoved(GameWorld* world, shared_ptr<GameObject> object);
 
-	// Override the default implementation of ITimerListener ////////////////////
 	void OnTimer(int value);
 
 private:
+	enum MenuState {
+		MENU_MAIN,
+		MENU_DIFFICULTY,
+		MENU_INSTRUCTIONS,
+		MENU_HIGHSCORES,
+		MENU_ENTER_TAG,
+		STATE_PLAYING
+	};
+
+	struct HighScoreEntry {
+		std::string name;
+		int score;
+	};
+
+	// Game state
+	bool mGameStarted;
+	MenuState mMenuState;
+	bool mDifficultyEasy;
+	std::string mCurrentInput;
+	int mFinalScore;
+	std::vector<HighScoreEntry> mHighScores;
+
+	// Game objects
 	shared_ptr<Spaceship> mSpaceship;
+	list<shared_ptr<GameObject>> mBackgroundAsteroids;
+
+	// In-game GUI labels
 	shared_ptr<GUILabel> mScoreLabel;
 	shared_ptr<GUILabel> mLivesLabel;
 	shared_ptr<GUILabel> mGameOverLabel;
-	shared_ptr<GUILabel> mStartLabel;
 
-	shared_ptr<GUILabel> mEnterNameLabel;
-	shared_ptr<GUILabel> mLeaderboardLabel;
+	// Main menu labels
+	shared_ptr<GUILabel> mMenuTitleLabel;
+	shared_ptr<GUILabel> mMenuItem1Label;
+	shared_ptr<GUILabel> mMenuItem2Label;
+	shared_ptr<GUILabel> mMenuItem3Label;
+	shared_ptr<GUILabel> mMenuItem4Label;
 
-	bool enteringName = false;
-	std::string currentName = "";
+	// Difficulty menu labels
+	shared_ptr<GUILabel> mDiffTitleLabel;
+	shared_ptr<GUILabel> mDiffItem1Label;
+	shared_ptr<GUILabel> mDiffItem2Label;
+	shared_ptr<GUILabel> mDiffBackLabel;
 
-	bool gameOver = false;
+	// Instructions labels
+	shared_ptr<GUILabel> mInstrTitleLabel;
+	shared_ptr<GUILabel> mInstrLine1Label;
+	shared_ptr<GUILabel> mInstrLine2Label;
+	shared_ptr<GUILabel> mInstrLine3Label;
+	shared_ptr<GUILabel> mInstrLine4Label;
+	shared_ptr<GUILabel> mInstrLine5Label;
+	shared_ptr<GUILabel> mInstrLine6Label;
+	shared_ptr<GUILabel> mInstrLine7Label;
+	shared_ptr<GUILabel> mInstrBackLabel;
+
+	// In-game notification (milestone/powerup alerts)
+	shared_ptr<GUILabel> mNotificationLabel;
+
+	// High score labels
+	shared_ptr<GUILabel> mHSTitleLabel;
+	shared_ptr<GUILabel> mHSEntryLabels[10];
+	shared_ptr<GUILabel> mHSBackLabel;
+
+	// Enter tag labels
+	shared_ptr<GUILabel> mEnterTagTitleLabel;
+	shared_ptr<GUILabel> mEnterTagScoreLabel;
+	shared_ptr<GUILabel> mEnterTagPromptLabel;
+	shared_ptr<GUILabel> mEnterTagInputLabel;
+	shared_ptr<GUILabel> mEnterTagHintLabel;
 
 	uint mLevel;
 	uint mAsteroidCount;
+	int  mNextMilestone;   // next score that triggers a bonus
+	int  mControlLevel;    // current control-upgrade level
 
-	void ResetSpaceship();
+	void StartGame();
+	void ResetGame();
+	void ShowNotification(const std::string& msg);
 	shared_ptr<GameObject> CreateSpaceship();
 	void CreateGUI();
 	void CreateAsteroids(const uint num_asteroids);
+	void CreateBackgroundAsteroids(const uint num_asteroids);
 	shared_ptr<GameObject> CreateExplosion();
-	void ShowLeaderboard();
-	
-	const static uint SHOW_GAME_OVER = 0;
-	const static uint START_NEXT_LEVEL = 1;
-	const static uint CREATE_NEW_PLAYER = 2;
+	void ShowMenuState(MenuState state);
+	void HideAllLabels();
+	void UpdateDifficultyLabel();
+	void UpdateHighScoreLabels();
+	void AddHighScore(const std::string& name, int score);
+
+	const static uint SHOW_GAME_OVER      = 0;
+	const static uint START_NEXT_LEVEL    = 1;
+	const static uint CREATE_NEW_PLAYER   = 2;
+	const static uint HIDE_NOTIFICATION   = 3;
 
 	ScoreKeeper mScoreKeeper;
 	Player mPlayer;
-
-	std::vector<HighScore> highScores;
-	std::vector<shared_ptr<GUILabel>> mLeaderboardLines;
-
-	int currentScore = 0;
-
-	void SaveHighScores();
-	void LoadHighScores();
-	void ResetGame();
 };
 
 #endif

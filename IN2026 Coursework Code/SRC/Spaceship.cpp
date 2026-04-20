@@ -3,97 +3,145 @@
 #include "Bullet.h"
 #include "Spaceship.h"
 #include "BoundingSphere.h"
+#include <cmath>
 
 using namespace std;
 
 // PUBLIC INSTANCE CONSTRUCTORS ///////////////////////////////////////////////
 
-/**  Default constructor. */
 Spaceship::Spaceship()
-	: GameObject("Spaceship"), mThrust(0)
+	: GameObject("Spaceship"), mThrust(0),
+	  mInvulnerable(false), mInvulnerableTimer(0), mBlinkTimer(0), mBlinkVisible(true),
+	  mRotationSpeed(90.0f), mFriction(1.0f), mThrustPower(10.0f)
 {
 }
 
-/** Construct a spaceship with given position, velocity, acceleration, angle, and rotation. */
 Spaceship::Spaceship(GLVector3f p, GLVector3f v, GLVector3f a, GLfloat h, GLfloat r)
-	: GameObject("Spaceship", p, v, a, h, r), mThrust(0)
+	: GameObject("Spaceship", p, v, a, h, r), mThrust(0),
+	  mInvulnerable(false), mInvulnerableTimer(0), mBlinkTimer(0), mBlinkVisible(true),
+	  mRotationSpeed(90.0f), mFriction(1.0f), mThrustPower(10.0f)
 {
 }
 
-/** Copy constructor. */
 Spaceship::Spaceship(const Spaceship& s)
-	: GameObject(s), mThrust(0)
+	: GameObject(s), mThrust(0),
+	  mInvulnerable(false), mInvulnerableTimer(0), mBlinkTimer(0), mBlinkVisible(true),
+	  mRotationSpeed(s.mRotationSpeed), mFriction(s.mFriction), mThrustPower(s.mThrustPower)
 {
 }
 
-/** Destructor. */
 Spaceship::~Spaceship(void)
 {
 }
 
 // PUBLIC INSTANCE METHODS ////////////////////////////////////////////////////
 
-/** Update this spaceship. */
+void Spaceship::Reset(void)
+{
+	GameObject::Reset();
+	mInvulnerable = false;
+	mInvulnerableTimer = 0;
+	mBlinkTimer = 0;
+	mBlinkVisible = true;
+}
+
 void Spaceship::Update(int t)
 {
-	// Call parent update function
+	// --- Invulnerability blink ---
+	if (mInvulnerable)
+	{
+		mInvulnerableTimer -= t;
+		mBlinkTimer += t;
+		if (mBlinkTimer >= 150)
+		{
+			mBlinkTimer = 0;
+			mBlinkVisible = !mBlinkVisible;
+		}
+		if (mInvulnerableTimer <= 0)
+		{
+			mInvulnerable = false;
+			mBlinkVisible = true;
+		}
+	}
+
+	// --- Friction (control upgrade) ---
+	// Only dampen velocity when not actively thrusting
+	if (mThrust == 0.0f && mFriction < 1.0f)
+	{
+		float dt = t / 1000.0f;
+		float factor = (float)pow((double)mFriction, (double)dt);
+		mVelocity.x *= factor;
+		mVelocity.y *= factor;
+	}
+
 	GameObject::Update(t);
 }
 
-/** Render this spaceship. */
 void Spaceship::Render(void)
 {
+	if (!mBlinkVisible) return;
+
 	if (mSpaceshipShape.get() != NULL) mSpaceshipShape->Render();
 
-	// If ship is thrusting
-	if ((mThrust > 0) && (mThrusterShape.get() != NULL)) {
+	if ((mThrust > 0) && (mThrusterShape.get() != NULL))
 		mThrusterShape->Render();
-	}
 
 	GameObject::Render();
 }
 
-/** Fire the rockets. */
 void Spaceship::Thrust(float t)
 {
 	mThrust = t;
-	// Increase acceleration in the direction of ship
-	mAcceleration.x = mThrust*cos(DEG2RAD*mAngle);
-	mAcceleration.y = mThrust*sin(DEG2RAD*mAngle);
+	mAcceleration.x = mThrust * cos(DEG2RAD * mAngle);
+	mAcceleration.y = mThrust * sin(DEG2RAD * mAngle);
 }
 
-/** Set the rotation. */
 void Spaceship::Rotate(float r)
 {
 	mRotation = r;
 }
 
-/** Shoot a bullet. */
 void Spaceship::Shoot(void)
 {
-	// Check the world exists
 	if (!mWorld) return;
-	// Construct a unit length vector in the direction the spaceship is headed
-	GLVector3f spaceship_heading(cos(DEG2RAD*mAngle), sin(DEG2RAD*mAngle), 0);
-	spaceship_heading.normalize();
-	// Calculate the point at the node of the spaceship from position and heading
-	GLVector3f bullet_position = mPosition + (spaceship_heading * 4);
-	// Calculate how fast the bullet should travel
+	GLVector3f heading(cos(DEG2RAD * mAngle), sin(DEG2RAD * mAngle), 0);
+	heading.normalize();
+	GLVector3f bullet_position = mPosition + (heading * 4);
 	float bullet_speed = 30;
-	// Construct a vector for the bullet's velocity
-	GLVector3f bullet_velocity = mVelocity + spaceship_heading * bullet_speed;
-	// Construct a new bullet
-	shared_ptr<GameObject> bullet
-		(new Bullet(bullet_position, bullet_velocity, mAcceleration, mAngle, 0, 2000));
+	GLVector3f bullet_velocity = mVelocity + heading * bullet_speed;
+	shared_ptr<GameObject> bullet(
+		new Bullet(bullet_position, bullet_velocity, mAcceleration, mAngle, 0, 2000));
 	bullet->SetBoundingShape(make_shared<BoundingSphere>(bullet->GetThisPtr(), 2.0f));
 	bullet->SetShape(mBulletShape);
-	// Add the new bullet to the game world
 	mWorld->AddObject(bullet);
+}
 
+void Spaceship::StartInvulnerability(int duration_ms)
+{
+	mInvulnerable = true;
+	mInvulnerableTimer = duration_ms;
+	mBlinkTimer = 0;
+	mBlinkVisible = true;
+}
+
+void Spaceship::SetControlLevel(int level)
+{
+	// Rotation: 90 deg/s base, +25 per level, cap at 215
+	mRotationSpeed = min(90.0f + level * 25.0f, 215.0f);
+
+	// Friction: per-second velocity multiplier — lower = stronger braking
+	// Level 0: no friction; each level adds progressively more drag
+	const float frictionTable[] = { 1.00f, 0.97f, 0.93f, 0.88f, 0.83f, 0.78f };
+	int idx = min(level, 5);
+	mFriction = frictionTable[idx];
+
+	// Thrust power: increases from level 2 onward
+	mThrustPower = 10.0f + max(0, level - 1) * 1.5f;
 }
 
 bool Spaceship::CollisionTest(shared_ptr<GameObject> o)
 {
+	if (mInvulnerable) return false;
 	if (o->GetType() != GameObjectType("Asteroid")) return false;
 	if (mBoundingShape.get() == NULL) return false;
 	if (o->GetBoundingShape().get() == NULL) return false;
