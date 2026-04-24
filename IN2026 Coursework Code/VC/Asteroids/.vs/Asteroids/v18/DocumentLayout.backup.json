@@ -43,20 +43,8 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 3,
+          "SelectedChildIndex": 2,
           "Children": [
-            {
-              "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "ScoreKeeper.h",
-              "DocumentMoniker": "C:\\Users\\keuun\\IN2026CW1\\IN2026 Coursework Code\\SRC\\ScoreKeeper.h",
-              "RelativeDocumentMoniker": "..\\..\\SRC\\ScoreKeeper.h",
-              "ToolTip": "C:\\Users\\keuun\\IN2026CW1\\IN2026 Coursework Code\\SRC\\ScoreKeeper.h",
-              "RelativeToolTip": "..\\..\\SRC\\ScoreKeeper.h",
-              "ViewState": "AgIAAB8AAAAAAAAAAAAqwDQAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2026-04-11T03:23:33.469Z"
-            },
             {
               "$type": "Document",
               "DocumentIndex": 4,
@@ -117,6 +105,18 @@
               "ViewState": "AgIAAB8AAAAAAAAAAAAqwDAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
               "WhenOpened": "2026-04-11T03:24:05.417Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "ScoreKeeper.h",
+              "DocumentMoniker": "C:\\Users\\keuun\\IN2026CW1\\IN2026 Coursework Code\\SRC\\ScoreKeeper.h",
+              "RelativeDocumentMoniker": "..\\..\\SRC\\ScoreKeeper.h",
+              "ToolTip": "C:\\Users\\keuun\\IN2026CW1\\IN2026 Coursework Code\\SRC\\ScoreKeeper.h",
+              "RelativeToolTip": "..\\..\\SRC\\ScoreKeeper.h",
+              "ViewState": "AgIAAB8AAAAAAAAAAAAqwDQAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2026-04-11T03:23:33.469Z"
             },
             {
               "$type": "Document",

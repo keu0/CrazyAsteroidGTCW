@@ -33,7 +33,7 @@ public:
 	void OnScoreChanged(int score);
 	void OnPlayerKilled(int lives_left);
 
-	void OnWorldUpdated(GameWorld* world) {}
+	void OnWorldUpdated(GameWorld* world);
 	void OnObjectAdded(GameWorld* world, shared_ptr<GameObject> object) {}
 	void OnObjectRemoved(GameWorld* world, shared_ptr<GameObject> object);
 
@@ -43,6 +43,7 @@ private:
 	enum MenuState {
 		MENU_MAIN,
 		MENU_DIFFICULTY,
+		MENU_CUSTOM,
 		MENU_INSTRUCTIONS,
 		MENU_HIGHSCORES,
 		MENU_ENTER_TAG,
@@ -56,8 +57,17 @@ private:
 
 	// Game state
 	bool mGameStarted;
+	bool mSpaceHeld;
 	MenuState mMenuState;
-	bool mDifficultyEasy;
+	int  mDifficulty;        // 0=Easy, 1=Normal, 2=Hard, 3=Custom
+	bool mCustomExtraLife;
+	bool mCustomSpread;
+	bool mCustomRing;
+	bool mCustomBlackHoles;
+	bool mCustomMilestones;
+	bool mHasPowerUps;       // computed at StartGame
+	bool mHasBlackHoles;
+	bool mHasMilestones;
 	std::string mCurrentInput;
 	int mFinalScore;
 	std::vector<HighScoreEntry> mHighScores;
@@ -82,7 +92,19 @@ private:
 	shared_ptr<GUILabel> mDiffTitleLabel;
 	shared_ptr<GUILabel> mDiffItem1Label;
 	shared_ptr<GUILabel> mDiffItem2Label;
+	shared_ptr<GUILabel> mDiffItem3Label;
+	shared_ptr<GUILabel> mDiffItem4Label;
 	shared_ptr<GUILabel> mDiffBackLabel;
+
+	// Custom difficulty menu
+	shared_ptr<GUILabel> mCustTitleLabel;
+	shared_ptr<GUILabel> mCustExtraLifeLabel;
+	shared_ptr<GUILabel> mCustSpreadLabel;
+	shared_ptr<GUILabel> mCustRingLabel;
+	shared_ptr<GUILabel> mCustBHLabel;
+	shared_ptr<GUILabel> mCustMilestoneLabel;
+	shared_ptr<GUILabel> mCustStartLabel;
+	shared_ptr<GUILabel> mCustBackLabel;
 
 	// Instructions labels
 	shared_ptr<GUILabel> mInstrTitleLabel;
@@ -95,8 +117,17 @@ private:
 	shared_ptr<GUILabel> mInstrLine7Label;
 	shared_ptr<GUILabel> mInstrBackLabel;
 
-	// In-game notification (milestone/powerup alerts)
+	// In-game notification label
 	shared_ptr<GUILabel> mNotificationLabel;
+
+	// Power-up HUD indicators (bottom-right)
+	shared_ptr<GUILabel> mRingStatusLabel;
+	shared_ptr<GUILabel> mSpreadStatusLabel;
+
+	// Speed / brake / dash HUD
+	shared_ptr<GUILabel> mSpeedLabel;
+	shared_ptr<GUILabel> mBrakeStatusLabel;
+	shared_ptr<GUILabel> mDashStatusLabel;
 
 	// High score labels
 	shared_ptr<GUILabel> mHSTitleLabel;
@@ -112,12 +143,16 @@ private:
 
 	uint mLevel;
 	uint mAsteroidCount;
-	int  mNextMilestone;   // next score that triggers a bonus
-	int  mControlLevel;    // current control-upgrade level
+	int  mNextMilestone;
+	int  mControlLevel;
+	int  mBlackHoleInterval;
+	int  mTitleAnimTimer;
+	GLVector3f mDeathPosition;
 
 	void StartGame();
 	void ResetGame();
 	void ShowNotification(const std::string& msg);
+	void ClearNearbyAsteroids(GLVector3f pos, float radius);
 	shared_ptr<GameObject> CreateSpaceship();
 	void CreateGUI();
 	void CreateAsteroids(const uint num_asteroids);
@@ -133,6 +168,7 @@ private:
 	const static uint START_NEXT_LEVEL    = 1;
 	const static uint CREATE_NEW_PLAYER   = 2;
 	const static uint HIDE_NOTIFICATION   = 3;
+	const static uint SPAWN_BLACK_HOLE    = 4;
 
 	ScoreKeeper mScoreKeeper;
 	Player mPlayer;

@@ -26,6 +26,7 @@ public:
 	void RemoveObject( shared_ptr<GameObject> ptr );
 	void RemoveObject( GameObject* ptr );
 	void Clear();
+	GameObjectList GetObjects() const { return mGameObjects; }
 	// shared_ptr<GameObject> GetGameObject( string name );
 
 	void FlagForRemoval( GameObject* ptr );
