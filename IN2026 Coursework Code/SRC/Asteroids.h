@@ -83,6 +83,7 @@ private:
 
 	// Main menu labels
 	shared_ptr<GUILabel> mMenuTitleLabel;
+	shared_ptr<GUILabel> mMenuSubTitleLabel;
 	shared_ptr<GUILabel> mMenuItem1Label;
 	shared_ptr<GUILabel> mMenuItem2Label;
 	shared_ptr<GUILabel> mMenuItem3Label;

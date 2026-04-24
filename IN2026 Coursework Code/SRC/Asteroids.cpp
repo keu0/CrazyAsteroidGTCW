@@ -88,18 +88,10 @@ void Asteroids::Stop()
 
 void Asteroids::OnKeyPressed(uchar key, int x, int y)
 {
-	// ESC navigates back from sub-menus
-	if (key == 27)
+	// Tab always returns to menu from in-game
+	if (mGameStarted && key == 9)
 	{
-		if (!mGameStarted)
-		{
-			if (mMenuState == MENU_DIFFICULTY || mMenuState == MENU_INSTRUCTIONS)
-				ShowMenuState(MENU_MAIN);
-			else if (mMenuState == MENU_CUSTOM)
-				ShowMenuState(MENU_DIFFICULTY);
-			else if (mMenuState == MENU_HIGHSCORES)
-				ResetGame();
-		}
+		ResetGame();
 		return;
 	}
 
@@ -118,20 +110,8 @@ void Asteroids::OnKeyPressed(uchar key, int x, int y)
 			if      (key == '1') { mDifficulty = 0; ShowMenuState(MENU_MAIN); }
 			else if (key == '2') { mDifficulty = 1; ShowMenuState(MENU_MAIN); }
 			else if (key == '3') { mDifficulty = 2; ShowMenuState(MENU_MAIN); }
-			else if (key == '4') { mDifficulty = 3; ShowMenuState(MENU_CUSTOM); }
+			else                 { ShowMenuState(MENU_MAIN); }
 			break;
-
-		case MENU_CUSTOM:
-		{
-			if (key == '1') { mCustomExtraLife  = !mCustomExtraLife;  mCustExtraLifeLabel->SetText(std::string("1 - Extra Life:   [") + (mCustomExtraLife  ? "ON " : "OFF") + "]"); }
-			if (key == '2') { mCustomSpread     = !mCustomSpread;     mCustSpreadLabel   ->SetText(std::string("2 - Spread Shot:  [") + (mCustomSpread     ? "ON " : "OFF") + "]"); }
-			if (key == '3') { mCustomRing       = !mCustomRing;       mCustRingLabel     ->SetText(std::string("3 - Ring Attack:  [") + (mCustomRing       ? "ON " : "OFF") + "]"); }
-			if (key == '4') { mCustomBlackHoles = !mCustomBlackHoles; mCustBHLabel       ->SetText(std::string("4 - Black Holes:  [") + (mCustomBlackHoles ? "ON " : "OFF") + "]"); }
-			if (key == '5') { mCustomMilestones = !mCustomMilestones; mCustMilestoneLabel->SetText(std::string("5 - Milestones:   [") + (mCustomMilestones ? "ON " : "OFF") + "]"); }
-			if (key == 13 || key == ' ')
-				ShowMenuState(MENU_MAIN);
-			break;
-		}
 
 		case MENU_INSTRUCTIONS:
 			ShowMenuState(MENU_MAIN);
@@ -328,10 +308,13 @@ void Asteroids::OnWorldUpdated(GameWorld* world)
 	mTitleAnimTimer += 16; // ~60 fps tick
 	{
 		float t  = mTitleAnimTimer / 1000.0f;
-		float r  = 0.55f + 0.45f * sinf(t * 1.8f);
-		float g  = 0.55f + 0.45f * sinf(t * 1.8f + 2.094f);
-		float b  = 0.55f + 0.45f * sinf(t * 1.8f + 4.189f);
+		float r  = 0.55f + 0.45f * sinf(t * 0.6f);
+		float g  = 0.55f + 0.45f * sinf(t * 0.6f + 2.094f);
+		float b  = 0.55f + 0.45f * sinf(t * 0.6f + 4.189f);
 		mMenuTitleLabel->SetColor(GLVector3f(r, g, b));
+		// Rainbow for #1 leaderboard entry when leaderboard is visible
+		if (mMenuState == MENU_HIGHSCORES && !mHighScores.empty())
+			mHSEntryLabels[0]->SetColor(GLVector3f(r, g, b));
 	}
 
 	if (!mGameStarted || !mSpaceship) return;
@@ -622,12 +605,17 @@ void Asteroids::CreateGUI()
 
 	// ---- MAIN MENU LABELS ----
 
-	mMenuTitleLabel = make_shared<GUILabel>(">> CRAZY ASTEROIDS <<");
+	mMenuTitleLabel = make_shared<GUILabel>("CRAZY ASTEROIDS");
 	mMenuTitleLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
 	mMenuTitleLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
 	mMenuTitleLabel->SetColor(GLVector3f(1.0f, 1.0f, 0.0f));
 	mGameDisplay->GetContainer()->AddComponent(
-		static_pointer_cast<GUIComponent>(mMenuTitleLabel), GLVector2f(0.5f, 0.85f));
+		static_pointer_cast<GUIComponent>(mMenuTitleLabel), GLVector2f(0.5f, 0.87f));
+
+	mMenuSubTitleLabel = make_shared<GUILabel>("");
+	mMenuSubTitleLabel->SetVisible(false);
+	mGameDisplay->GetContainer()->AddComponent(
+		static_pointer_cast<GUIComponent>(mMenuSubTitleLabel), GLVector2f(0.5f, 0.87f));
 
 	mMenuItem1Label = make_shared<GUILabel>("1 - Start Game");
 	mMenuItem1Label->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
@@ -639,7 +627,7 @@ void Asteroids::CreateGUI()
 	mMenuItem2Label = make_shared<GUILabel>("2 - Difficulty  [EASY]");
 	mMenuItem2Label->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
 	mMenuItem2Label->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
-	mMenuItem2Label->SetColor(GLVector3f(1.0f, 1.0f, 1.0f));
+	mMenuItem2Label->SetColor(GLVector3f(0.3f, 1.0f, 0.3f));
 	mGameDisplay->GetContainer()->AddComponent(
 		static_pointer_cast<GUIComponent>(mMenuItem2Label), GLVector2f(0.5f, 0.58f));
 
@@ -667,7 +655,7 @@ void Asteroids::CreateGUI()
 	mGameDisplay->GetContainer()->AddComponent(
 		static_pointer_cast<GUIComponent>(mDiffTitleLabel), GLVector2f(0.5f, 0.85f));
 
-	mDiffItem1Label = make_shared<GUILabel>("1 - Easy    (Power-Ups,  No Black Holes)");
+	mDiffItem1Label = make_shared<GUILabel>("1 - Easy   (Power-Ups, No Black Holes)");
 	mDiffItem1Label->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
 	mDiffItem1Label->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
 	mDiffItem1Label->SetColor(GLVector3f(0.3f, 1.0f, 0.3f));
@@ -675,31 +663,28 @@ void Asteroids::CreateGUI()
 	mGameDisplay->GetContainer()->AddComponent(
 		static_pointer_cast<GUIComponent>(mDiffItem1Label), GLVector2f(0.5f, 0.68f));
 
-	mDiffItem2Label = make_shared<GUILabel>("2 - Normal  (Power-Ups + Black Holes)");
+	mDiffItem2Label = make_shared<GUILabel>("2 - Normal (Power-Ups + Black Holes)");
 	mDiffItem2Label->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
 	mDiffItem2Label->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
 	mDiffItem2Label->SetColor(GLVector3f(1.0f, 1.0f, 0.3f));
 	mDiffItem2Label->SetVisible(false);
 	mGameDisplay->GetContainer()->AddComponent(
-		static_pointer_cast<GUIComponent>(mDiffItem2Label), GLVector2f(0.5f, 0.55f));
+		static_pointer_cast<GUIComponent>(mDiffItem2Label), GLVector2f(0.5f, 0.52f));
 
-	mDiffItem3Label = make_shared<GUILabel>("3 - Hard    (Black Holes, No Power-Ups)");
+	mDiffItem3Label = make_shared<GUILabel>("3 - Hard   (Black Holes, No Power-Ups)");
 	mDiffItem3Label->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
 	mDiffItem3Label->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
 	mDiffItem3Label->SetColor(GLVector3f(1.0f, 0.3f, 0.3f));
 	mDiffItem3Label->SetVisible(false);
 	mGameDisplay->GetContainer()->AddComponent(
-		static_pointer_cast<GUIComponent>(mDiffItem3Label), GLVector2f(0.5f, 0.42f));
+		static_pointer_cast<GUIComponent>(mDiffItem3Label), GLVector2f(0.5f, 0.36f));
 
-	mDiffItem4Label = make_shared<GUILabel>("4 - Custom  (Choose Your Settings)");
-	mDiffItem4Label->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
-	mDiffItem4Label->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
-	mDiffItem4Label->SetColor(GLVector3f(0.8f, 0.5f, 1.0f));
+	mDiffItem4Label = make_shared<GUILabel>("");
 	mDiffItem4Label->SetVisible(false);
 	mGameDisplay->GetContainer()->AddComponent(
-		static_pointer_cast<GUIComponent>(mDiffItem4Label), GLVector2f(0.5f, 0.30f));
+		static_pointer_cast<GUIComponent>(mDiffItem4Label), GLVector2f(0.5f, 0.24f));
 
-	mDiffBackLabel = make_shared<GUILabel>("ESC - Back to Menu");
+	mDiffBackLabel = make_shared<GUILabel>("Press any key to return");
 	mDiffBackLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
 	mDiffBackLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
 	mDiffBackLabel->SetColor(GLVector3f(0.7f, 0.7f, 0.7f));
@@ -765,7 +750,7 @@ void Asteroids::CreateGUI()
 	mGameDisplay->GetContainer()->AddComponent(
 		static_pointer_cast<GUIComponent>(mCustStartLabel), GLVector2f(0.5f, 0.19f));
 
-	mCustBackLabel = make_shared<GUILabel>("ESC - Back to Difficulty");
+	mCustBackLabel = make_shared<GUILabel>("Tab - Back to Difficulty");
 	mCustBackLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
 	mCustBackLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
 	mCustBackLabel->SetColor(GLVector3f(0.6f, 0.6f, 0.6f));
@@ -783,55 +768,55 @@ void Asteroids::CreateGUI()
 	mGameDisplay->GetContainer()->AddComponent(
 		static_pointer_cast<GUIComponent>(mInstrTitleLabel), GLVector2f(0.5f, 0.88f));
 
-	mInstrLine1Label = make_shared<GUILabel>("Up Arrow  -  Thrust forward");
+	mInstrLine1Label = make_shared<GUILabel>("UP: Thrust | DOWN: Brake | L/R: Rotate");
 	mInstrLine1Label->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
 	mInstrLine1Label->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
 	mInstrLine1Label->SetColor(GLVector3f(0.9f, 0.9f, 1.0f));
 	mInstrLine1Label->SetVisible(false);
 	mGameDisplay->GetContainer()->AddComponent(
-		static_pointer_cast<GUIComponent>(mInstrLine1Label), GLVector2f(0.5f, 0.75f));
+		static_pointer_cast<GUIComponent>(mInstrLine1Label), GLVector2f(0.5f, 0.76f));
 
-	mInstrLine2Label = make_shared<GUILabel>("Down Arrow  -  Retro-thrust (brake / slow down)");
+	mInstrLine2Label = make_shared<GUILabel>("CTRL: Hard Brake | SHIFT+Arrow: Dash");
 	mInstrLine2Label->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
 	mInstrLine2Label->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
 	mInstrLine2Label->SetColor(GLVector3f(0.9f, 0.9f, 1.0f));
 	mInstrLine2Label->SetVisible(false);
 	mGameDisplay->GetContainer()->AddComponent(
-		static_pointer_cast<GUIComponent>(mInstrLine2Label), GLVector2f(0.5f, 0.66f));
+		static_pointer_cast<GUIComponent>(mInstrLine2Label), GLVector2f(0.5f, 0.67f));
 
-	mInstrLine3Label = make_shared<GUILabel>("Left / Right Arrow  -  Rotate ship");
+	mInstrLine3Label = make_shared<GUILabel>("SPACE: Shoot | SHIFT+SPACE: Ring Attack");
 	mInstrLine3Label->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
 	mInstrLine3Label->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
 	mInstrLine3Label->SetColor(GLVector3f(0.9f, 0.9f, 1.0f));
 	mInstrLine3Label->SetVisible(false);
 	mGameDisplay->GetContainer()->AddComponent(
-		static_pointer_cast<GUIComponent>(mInstrLine3Label), GLVector2f(0.5f, 0.57f));
+		static_pointer_cast<GUIComponent>(mInstrLine3Label), GLVector2f(0.5f, 0.58f));
 
-	mInstrLine4Label = make_shared<GUILabel>("Ctrl (hold)  -  Emergency brake  |  Tab  -  Main Menu");
+	mInstrLine4Label = make_shared<GUILabel>("TAB: Return to Main Menu (works in-game)");
 	mInstrLine4Label->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
 	mInstrLine4Label->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
 	mInstrLine4Label->SetColor(GLVector3f(0.9f, 0.9f, 1.0f));
 	mInstrLine4Label->SetVisible(false);
 	mGameDisplay->GetContainer()->AddComponent(
-		static_pointer_cast<GUIComponent>(mInstrLine4Label), GLVector2f(0.5f, 0.48f));
+		static_pointer_cast<GUIComponent>(mInstrLine4Label), GLVector2f(0.5f, 0.49f));
 
-	mInstrLine5Label = make_shared<GUILabel>("Space  -  Shoot  |  Shift + Arrow  -  Dash (4 dirs)");
+	mInstrLine5Label = make_shared<GUILabel>("Power-ups: Extra Life, Spread Shot, Ring");
 	mInstrLine5Label->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
 	mInstrLine5Label->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
-	mInstrLine5Label->SetColor(GLVector3f(0.9f, 0.9f, 1.0f));
+	mInstrLine5Label->SetColor(GLVector3f(0.3f, 1.0f, 0.6f));
 	mInstrLine5Label->SetVisible(false);
 	mGameDisplay->GetContainer()->AddComponent(
 		static_pointer_cast<GUIComponent>(mInstrLine5Label), GLVector2f(0.5f, 0.39f));
 
-	mInstrLine6Label = make_shared<GUILabel>("Shift + Space  -  Ring Attack (power-up required)");
+	mInstrLine6Label = make_shared<GUILabel>("10 pts/asteroid | Black Holes mid-game");
 	mInstrLine6Label->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
 	mInstrLine6Label->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
-	mInstrLine6Label->SetColor(GLVector3f(0.3f, 1.0f, 0.6f));
+	mInstrLine6Label->SetColor(GLVector3f(1.0f, 0.8f, 0.2f));
 	mInstrLine6Label->SetVisible(false);
 	mGameDisplay->GetContainer()->AddComponent(
-		static_pointer_cast<GUIComponent>(mInstrLine6Label), GLVector2f(0.5f, 0.30f));
+		static_pointer_cast<GUIComponent>(mInstrLine6Label), GLVector2f(0.5f, 0.29f));
 
-	mInstrLine7Label = make_shared<GUILabel>("Collect power-ups to unlock spread shot, ring & upgrades!");
+	mInstrLine7Label = make_shared<GUILabel>("Enter tag on Leaderboard after game over");
 	mInstrLine7Label->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
 	mInstrLine7Label->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
 	mInstrLine7Label->SetColor(GLVector3f(1.0f, 0.8f, 0.2f));
@@ -839,10 +824,10 @@ void Asteroids::CreateGUI()
 	mGameDisplay->GetContainer()->AddComponent(
 		static_pointer_cast<GUIComponent>(mInstrLine7Label), GLVector2f(0.5f, 0.19f));
 
-	mInstrBackLabel = make_shared<GUILabel>("-- Press any key to return --");
+	mInstrBackLabel = make_shared<GUILabel>("Press any key to return");
 	mInstrBackLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
 	mInstrBackLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
-	mInstrBackLabel->SetColor(GLVector3f(0.6f, 0.6f, 0.6f));
+	mInstrBackLabel->SetColor(GLVector3f(0.7f, 0.7f, 0.7f));
 	mInstrBackLabel->SetVisible(false);
 	mGameDisplay->GetContainer()->AddComponent(
 		static_pointer_cast<GUIComponent>(mInstrBackLabel), GLVector2f(0.5f, 0.07f));
@@ -979,6 +964,7 @@ void Asteroids::HideAllLabels()
 	mGameOverLabel->SetVisible(false);
 
 	mMenuTitleLabel->SetVisible(false);
+	mMenuSubTitleLabel->SetVisible(false);
 	mMenuItem1Label->SetVisible(false);
 	mMenuItem2Label->SetVisible(false);
 	mMenuItem3Label->SetVisible(false);
@@ -1038,6 +1024,7 @@ void Asteroids::ShowMenuState(MenuState state)
 	case MENU_MAIN:
 		UpdateDifficultyLabel();
 		mMenuTitleLabel->SetVisible(true);
+		mMenuSubTitleLabel->SetVisible(true);
 		mMenuItem1Label->SetVisible(true);
 		mMenuItem2Label->SetVisible(true);
 		mMenuItem3Label->SetVisible(true);
@@ -1049,24 +1036,7 @@ void Asteroids::ShowMenuState(MenuState state)
 		mDiffItem1Label->SetVisible(true);
 		mDiffItem2Label->SetVisible(true);
 		mDiffItem3Label->SetVisible(true);
-		mDiffItem4Label->SetVisible(true);
 		mDiffBackLabel->SetVisible(true);
-		break;
-
-	case MENU_CUSTOM:
-		mCustExtraLifeLabel->SetText(std::string("1 - Extra Life:   [") + (mCustomExtraLife  ? "ON " : "OFF") + "]");
-		mCustSpreadLabel   ->SetText(std::string("2 - Spread Shot:  [") + (mCustomSpread     ? "ON " : "OFF") + "]");
-		mCustRingLabel     ->SetText(std::string("3 - Ring Attack:  [") + (mCustomRing       ? "ON " : "OFF") + "]");
-		mCustBHLabel       ->SetText(std::string("4 - Black Holes:  [") + (mCustomBlackHoles ? "ON " : "OFF") + "]");
-		mCustMilestoneLabel->SetText(std::string("5 - Milestones:   [") + (mCustomMilestones ? "ON " : "OFF") + "]");
-		mCustTitleLabel->SetVisible(true);
-		mCustExtraLifeLabel->SetVisible(true);
-		mCustSpreadLabel->SetVisible(true);
-		mCustRingLabel->SetVisible(true);
-		mCustBHLabel->SetVisible(true);
-		mCustMilestoneLabel->SetVisible(true);
-		mCustStartLabel->SetVisible(true);
-		mCustBackLabel->SetVisible(true);
 		break;
 
 	case MENU_INSTRUCTIONS:
@@ -1113,9 +1083,12 @@ void Asteroids::ShowMenuState(MenuState state)
 
 void Asteroids::UpdateDifficultyLabel()
 {
-	const char* names[] = { "EASY", "NORMAL", "HARD", "CUSTOM" };
+	const char* names[] = { "EASY", "NORMAL", "HARD" };
 	std::string text = std::string("2 - Difficulty  [") + names[mDifficulty] + "]";
 	mMenuItem2Label->SetText(text);
+	if      (mDifficulty == 0) mMenuItem2Label->SetColor(GLVector3f(0.3f, 1.0f, 0.3f));
+	else if (mDifficulty == 1) mMenuItem2Label->SetColor(GLVector3f(1.0f, 1.0f, 0.3f));
+	else                       mMenuItem2Label->SetColor(GLVector3f(1.0f, 0.3f, 0.3f));
 }
 
 void Asteroids::UpdateHighScoreLabels()
