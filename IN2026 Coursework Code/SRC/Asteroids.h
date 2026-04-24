@@ -72,7 +72,6 @@ private:
 	// In-game GUI labels
 	shared_ptr<GUILabel> mScoreLabel;
 	shared_ptr<GUILabel> mLivesLabel;
-	shared_ptr<GUILabel> mGameOverLabel;
 
 	// Main menu labels
 	shared_ptr<GUILabel> mMenuTitleLabel;

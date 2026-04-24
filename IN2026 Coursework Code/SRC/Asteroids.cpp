@@ -281,7 +281,6 @@ void Asteroids::OnObjectRemoved(GameWorld* world, shared_ptr<GameObject> object)
 			if (mPlayer.GetLives() < 5) enabled.push_back(PowerUp::EXTRA_LIFE);
 			enabled.push_back(PowerUp::SHOOT_SPREAD);
 			enabled.push_back(PowerUp::RING_ATTACK);
-			if (enabled.empty()) return;
 			PowerUp::Type puType = enabled[rand() % enabled.size()];
 
 			std::function<void()> cb;
@@ -606,14 +605,6 @@ void Asteroids::CreateGUI()
 	mGameDisplay->GetContainer()->AddComponent(
 		static_pointer_cast<GUIComponent>(mLivesLabel), GLVector2f(0.0f, 0.0f));
 
-	mGameOverLabel = make_shared<GUILabel>("GAME OVER");
-	mGameOverLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
-	mGameOverLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
-	mGameOverLabel->SetColor(GLVector3f(1.0f, 0.2f, 0.2f));
-	mGameOverLabel->SetVisible(false);
-	mGameDisplay->GetContainer()->AddComponent(
-		static_pointer_cast<GUIComponent>(mGameOverLabel), GLVector2f(0.5f, 0.5f));
-
 	// ---- MAIN MENU LABELS ----
 
 	mMenuTitleLabel = make_shared<GUILabel>("CRAZY ASTEROIDS");
@@ -896,7 +887,6 @@ void Asteroids::HideAllLabels()
 {
 	mScoreLabel->SetVisible(false);
 	mLivesLabel->SetVisible(false);
-	mGameOverLabel->SetVisible(false);
 
 	mMenuTitleLabel->SetVisible(false);
 	mMenuItem1Label->SetVisible(false);
