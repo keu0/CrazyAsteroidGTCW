@@ -57,7 +57,6 @@ private:
 
 	// Game state
 	bool mGameStarted;
-	bool mSpaceHeld;
 	MenuState mMenuState;
 	int  mDifficulty;        // 0=Easy, 1=Normal, 2=Hard, 3=Custom
 	bool mCustomExtraLife;
@@ -83,7 +82,6 @@ private:
 
 	// Main menu labels
 	shared_ptr<GUILabel> mMenuTitleLabel;
-	shared_ptr<GUILabel> mMenuSubTitleLabel;
 	shared_ptr<GUILabel> mMenuItem1Label;
 	shared_ptr<GUILabel> mMenuItem2Label;
 	shared_ptr<GUILabel> mMenuItem3Label;
@@ -94,7 +92,6 @@ private:
 	shared_ptr<GUILabel> mDiffItem1Label;
 	shared_ptr<GUILabel> mDiffItem2Label;
 	shared_ptr<GUILabel> mDiffItem3Label;
-	shared_ptr<GUILabel> mDiffItem4Label;
 	shared_ptr<GUILabel> mDiffBackLabel;
 
 	// Custom difficulty menu

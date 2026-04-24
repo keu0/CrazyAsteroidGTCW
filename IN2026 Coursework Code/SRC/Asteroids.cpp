@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <functional>
 #include <vector>
+#include <fstream>
 
 // PUBLIC INSTANCE CONSTRUCTORS ///////////////////////////////////////////////
 
@@ -26,7 +27,6 @@ Asteroids::Asteroids(int argc, char *argv[])
 	mLevel = 0;
 	mAsteroidCount = 0;
 	mGameStarted = false;
-	mSpaceHeld = false;
 	mMenuState = MENU_MAIN;
 	mDifficulty = 0;
 	mCustomExtraLife  = true;
@@ -40,6 +40,7 @@ Asteroids::Asteroids(int argc, char *argv[])
 	mFinalScore = 0;
 	mNextMilestone = 250;
 	mControlLevel = 0;
+	mBlackHoleInterval = 20000;
 	mTitleAnimTimer = 0;
 }
 
@@ -67,6 +68,32 @@ void Asteroids::Start()
 	AnimationManager::GetInstance().CreateAnimationFromFile("explosion", 64, 1024, 64, 64, "explosion_fs.png");
 	AnimationManager::GetInstance().CreateAnimationFromFile("asteroid1", 128, 8192, 128, 128, "asteroid1_fs.png");
 	AnimationManager::GetInstance().CreateAnimationFromFile("spaceship", 128, 128, 128, 128, "spaceship_fs.png");
+
+	// Load persisted high scores from file
+	{
+		std::ifstream file("highscores.txt");
+		if (file.is_open())
+		{
+			std::string line;
+			while (std::getline(file, line))
+			{
+				size_t pos = line.rfind(':');
+				if (pos != std::string::npos)
+				{
+					HighScoreEntry e;
+					e.name  = line.substr(0, pos);
+					e.score = std::stoi(line.substr(pos + 1));
+					mHighScores.push_back(e);
+				}
+			}
+			file.close();
+			std::sort(mHighScores.begin(), mHighScores.end(),
+				[](const HighScoreEntry& a, const HighScoreEntry& b) {
+					return a.score > b.score;
+				});
+			if (mHighScores.size() > 10) mHighScores.resize(10);
+		}
+	}
 
 	CreateGUI();
 
@@ -153,9 +180,6 @@ void Asteroids::OnKeyPressed(uchar key, int x, int y)
 	// In-game controls
 	switch (key)
 	{
-	case '\t': // Tab — return to main menu
-		ResetGame();
-		break;
 	case ' ':
 		if (glutGetModifiers() & GLUT_ACTIVE_SHIFT)
 			mSpaceship->ShootRing();
@@ -503,7 +527,6 @@ void Asteroids::StartGame()
 void Asteroids::ResetGame()
 {
 	mGameStarted = false;
-	mSpaceHeld = false;
 	mLevel = 0;
 	mAsteroidCount = 0;
 	mNextMilestone = 250;
@@ -612,11 +635,6 @@ void Asteroids::CreateGUI()
 	mGameDisplay->GetContainer()->AddComponent(
 		static_pointer_cast<GUIComponent>(mMenuTitleLabel), GLVector2f(0.5f, 0.87f));
 
-	mMenuSubTitleLabel = make_shared<GUILabel>("");
-	mMenuSubTitleLabel->SetVisible(false);
-	mGameDisplay->GetContainer()->AddComponent(
-		static_pointer_cast<GUIComponent>(mMenuSubTitleLabel), GLVector2f(0.5f, 0.87f));
-
 	mMenuItem1Label = make_shared<GUILabel>("1 - Start Game");
 	mMenuItem1Label->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
 	mMenuItem1Label->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
@@ -678,11 +696,6 @@ void Asteroids::CreateGUI()
 	mDiffItem3Label->SetVisible(false);
 	mGameDisplay->GetContainer()->AddComponent(
 		static_pointer_cast<GUIComponent>(mDiffItem3Label), GLVector2f(0.5f, 0.36f));
-
-	mDiffItem4Label = make_shared<GUILabel>("");
-	mDiffItem4Label->SetVisible(false);
-	mGameDisplay->GetContainer()->AddComponent(
-		static_pointer_cast<GUIComponent>(mDiffItem4Label), GLVector2f(0.5f, 0.24f));
 
 	mDiffBackLabel = make_shared<GUILabel>("Press any key to return");
 	mDiffBackLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
@@ -964,7 +977,6 @@ void Asteroids::HideAllLabels()
 	mGameOverLabel->SetVisible(false);
 
 	mMenuTitleLabel->SetVisible(false);
-	mMenuSubTitleLabel->SetVisible(false);
 	mMenuItem1Label->SetVisible(false);
 	mMenuItem2Label->SetVisible(false);
 	mMenuItem3Label->SetVisible(false);
@@ -974,7 +986,6 @@ void Asteroids::HideAllLabels()
 	mDiffItem1Label->SetVisible(false);
 	mDiffItem2Label->SetVisible(false);
 	mDiffItem3Label->SetVisible(false);
-	mDiffItem4Label->SetVisible(false);
 	mDiffBackLabel->SetVisible(false);
 
 	mCustTitleLabel->SetVisible(false);
@@ -1024,7 +1035,6 @@ void Asteroids::ShowMenuState(MenuState state)
 	case MENU_MAIN:
 		UpdateDifficultyLabel();
 		mMenuTitleLabel->SetVisible(true);
-		mMenuSubTitleLabel->SetVisible(true);
 		mMenuItem1Label->SetVisible(true);
 		mMenuItem2Label->SetVisible(true);
 		mMenuItem3Label->SetVisible(true);
@@ -1128,6 +1138,15 @@ void Asteroids::AddHighScore(const std::string& name, int score)
 		});
 	if (mHighScores.size() > 10)
 		mHighScores.resize(10);
+
+	// Save to file so scores persist between sessions
+	std::ofstream file("highscores.txt");
+	if (file.is_open())
+	{
+		for (auto& e : mHighScores)
+			file << e.name << ":" << e.score << "\n";
+		file.close();
+	}
 }
 
 void Asteroids::ClearNearbyAsteroids(GLVector3f pos, float radius)
